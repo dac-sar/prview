@@ -1,0 +1,30 @@
+{
+  "name": "prview",
+  "version": "1.0.0",
+  "description": "TUI tool to check PRs across repositories",
+  "type": "module",
+  "bin": {
+    "pv": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "start": "node dist/cli.js",
+    "check": "biome check src/",
+    "check:fix": "biome check --write src/"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "ink": "^6.0.0",
+    "meow": "^13.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@sindresorhus/tsconfig": "^3.0.1",
+    "@types/node": "^25.3.2",
+    "@types/react": "^19.0.0",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.7.0"
+  }
+}
