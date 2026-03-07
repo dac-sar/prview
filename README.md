@@ -61,7 +61,3 @@ cd prview
 make setup
 npm run dev
 ```
-
-## License
-
-MIT
