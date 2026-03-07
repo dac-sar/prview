@@ -24,7 +24,7 @@ gh auth login
 ## Installation
 
 ```sh
-npm install -g prview
+npm install -g @dacsar/prview
 ```
 
 ## Usage
