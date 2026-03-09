@@ -23,9 +23,8 @@ export function formatElapsedTime(createdAt: string): string {
 export function getTimeIcon(createdAt: string): string {
 	const diffHours =
 		(Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
-	if (diffHours < 12) return "🆕";
-	if (diffHours < 24) return "⚠️";
-	return "🔥";
+	if (diffHours >= 24) return "🔥";
+	return "  ";
 }
 
 export function getTimeColor(createdAt: string): TimeColor {

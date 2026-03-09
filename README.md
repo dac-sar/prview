@@ -61,3 +61,11 @@ cd prview
 make setup
 npm run dev
 ```
+
+### ローカルで動作確認
+
+ビルドして実行を一発で行えます:
+
+```sh
+make pv
+```

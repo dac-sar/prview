@@ -1,4 +1,4 @@
-.PHONY: setup build check check-fix
+.PHONY: setup build check check-fix pv
 
 setup:
 	npm install
@@ -11,3 +11,6 @@ check:
 
 check-fix:
 	npm run check:fix
+
+pv:
+	npm run build && node dist/cli.js
