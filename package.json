@@ -2,6 +2,10 @@
   "name": "@dacsar/prview",
   "version": "1.0.0",
   "description": "TUI tool to check PRs across repositories",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dac-sar/prview.git"
+  },
   "type": "module",
   "bin": {
     "pv": "./dist/cli.js"
