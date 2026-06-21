@@ -1,3 +1,16 @@
+// Single source of truth for key bindings, shown in the help dialog.
+export const COMMANDS: { key: string; label: string }[] = [
+	{ key: "Tab", label: "Switch tab" },
+	{ key: "j / k", label: "Move selection (↑ / ↓)" },
+	{ key: "Enter", label: "Open PR in browser" },
+	{ key: "y", label: "Copy PR URL" },
+	{ key: "Y", label: "Copy branch name" },
+	{ key: "/", label: "Filter" },
+	{ key: "r", label: "Refresh" },
+	{ key: "h", label: "Toggle this help" },
+	{ key: "q", label: "Quit" },
+];
+
 export const COL = {
 	icon: 4,
 	repo: 18,

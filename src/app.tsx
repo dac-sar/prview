@@ -1,5 +1,6 @@
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { HelpDialog } from "./components/help-dialog.js";
 import { Loading } from "./components/loading.js";
 import { PrTable } from "./components/pr-table.js";
 import { StatusBar } from "./components/status-bar.js";
@@ -19,11 +20,12 @@ export function App() {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [filter, setFilter] = useState("");
 	const [isFilterMode, setIsFilterMode] = useState(false);
+	const [showHelp, setShowHelp] = useState(false);
 	const [copiedMessage, setCopiedMessage] = useState("");
 	const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const notifyCopied = useCallback(() => {
-		setCopiedMessage("Copied URL to clipboard");
+	const notifyCopied = useCallback((label: string) => {
+		setCopiedMessage(`Copied ${label} to clipboard`);
 		if (copiedTimer.current) {
 			clearTimeout(copiedTimer.current);
 		}
@@ -65,10 +67,25 @@ export function App() {
 		{ isActive: isFilterMode },
 	);
 
+	// Help dialog: any of h / Esc / q closes it; everything else is swallowed.
+	useInput(
+		(input, key) => {
+			if (input === "h" || key.escape || input === "q") {
+				setShowHelp(false);
+			}
+		},
+		{ isActive: showHelp },
+	);
+
 	useInput(
 		(input, key) => {
 			if (input === "q") {
 				exit();
+				return;
+			}
+
+			if (input === "h") {
+				setShowHelp(true);
 				return;
 			}
 
@@ -103,7 +120,17 @@ export function App() {
 				const pr = filteredPRs[selectedIndex];
 				if (pr) {
 					copyToClipboard(pr.url);
-					notifyCopied();
+					notifyCopied("URL");
+				}
+
+				return;
+			}
+
+			if (input === "Y") {
+				const pr = filteredPRs[selectedIndex];
+				if (pr) {
+					copyToClipboard(pr.branch);
+					notifyCopied("branch");
 				}
 
 				return;
@@ -125,7 +152,7 @@ export function App() {
 				return;
 			}
 		},
-		{ isActive: !isFilterMode },
+		{ isActive: !isFilterMode && !showHelp },
 	);
 
 	// StatusBar: 2 rows (border-top + content), error: 1 row if present
@@ -139,7 +166,9 @@ export function App() {
 					<Text color="red">Error: {error}</Text>
 				</Box>
 			)}
-			{loading && filteredPRs.length === 0 ? (
+			{showHelp ? (
+				<HelpDialog />
+			) : loading && filteredPRs.length === 0 ? (
 				<Loading error={error} />
 			) : (
 				<Box
