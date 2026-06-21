@@ -1,6 +1,6 @@
 {
   "name": "@dacsar/prview",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "TUI tool to check PRs across repositories",
   "repository": {
     "type": "git",
