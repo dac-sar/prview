@@ -8,6 +8,7 @@ import { useFilterSort } from "./hooks/use-filter-sort.js";
 import { usePullRequests } from "./hooks/use-pull-requests.js";
 import type { Tab } from "./types.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
+import { markPrReady } from "./utils/fetch-prs.js";
 import { openUrl } from "./utils/open-url.js";
 
 export function App() {
@@ -21,16 +22,21 @@ export function App() {
 	const [filter, setFilter] = useState("");
 	const [isFilterMode, setIsFilterMode] = useState(false);
 	const [showHelp, setShowHelp] = useState(false);
-	const [copiedMessage, setCopiedMessage] = useState("");
-	const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [statusMessage, setStatusMessage] = useState("");
+	const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const notifyCopied = useCallback((label: string) => {
-		setCopiedMessage(`Copied ${label} to clipboard`);
-		if (copiedTimer.current) {
-			clearTimeout(copiedTimer.current);
+	const notify = useCallback((message: string) => {
+		setStatusMessage(message);
+		if (statusTimer.current) {
+			clearTimeout(statusTimer.current);
 		}
-		copiedTimer.current = setTimeout(() => setCopiedMessage(""), 2000);
+		statusTimer.current = setTimeout(() => setStatusMessage(""), 2000);
 	}, []);
+
+	const notifyCopied = useCallback(
+		(label: string) => notify(`Copied ${label} to clipboard`),
+		[notify],
+	);
 
 	const currentPRs = activeTab === "review-requested" ? reviewRequested : myPRs;
 	const filteredPRs = useFilterSort(currentPRs, filter);
@@ -136,6 +142,29 @@ export function App() {
 				return;
 			}
 
+			if (input === "o") {
+				const pr = filteredPRs[selectedIndex];
+				if (pr) {
+					if (!pr.isDraft) {
+						notify(`#${pr.number} is not a draft`);
+					} else {
+						notify(`Marking #${pr.number} as ready...`);
+						markPrReady(pr.repository, pr.number)
+							.then(() => {
+								notify(`Marked #${pr.number} as ready`);
+								refresh();
+							})
+							.catch((err: unknown) => {
+								const message =
+									err instanceof Error ? err.message : "Unknown error";
+								notify(`Failed to mark ready: ${message}`);
+							});
+					}
+				}
+
+				return;
+			}
+
 			if (input === "/") {
 				setIsFilterMode(true);
 				return;
@@ -193,7 +222,7 @@ export function App() {
 				myCount={myPRs.length}
 				isFilterMode={isFilterMode}
 				loading={loading}
-				copiedMessage={copiedMessage}
+				statusMessage={statusMessage}
 			/>
 		</Box>
 	);

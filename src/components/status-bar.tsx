@@ -11,7 +11,7 @@ type Props = {
 	myCount: number;
 	isFilterMode: boolean;
 	loading: boolean;
-	copiedMessage: string;
+	statusMessage: string;
 };
 
 export function StatusBar({
@@ -23,7 +23,7 @@ export function StatusBar({
 	myCount,
 	isFilterMode,
 	loading,
-	copiedMessage,
+	statusMessage,
 }: Props) {
 	const isReview = activeTab === "review-requested";
 	const tabLabel = isReview
@@ -42,8 +42,8 @@ export function StatusBar({
 			justifyContent="space-between"
 		>
 			<Box>
-				{copiedMessage ? (
-					<Text color="green">✓ {copiedMessage}</Text>
+				{statusMessage ? (
+					<Text color="green">✓ {statusMessage}</Text>
 				) : isFilterActive || filter ? (
 					<>
 						<Text color="yellow">/</Text>

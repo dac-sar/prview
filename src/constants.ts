@@ -3,6 +3,7 @@ export const COMMANDS: { key: string; label: string }[] = [
 	{ key: "Tab", label: "Switch tab" },
 	{ key: "j / k", label: "Move selection (↑ / ↓)" },
 	{ key: "Enter", label: "Open PR in browser" },
+	{ key: "o", label: "Mark draft as ready for review" },
 	{ key: "y", label: "Copy PR URL" },
 	{ key: "Y", label: "Copy branch name" },
 	{ key: "/", label: "Filter" },

@@ -169,3 +169,7 @@ export async function fetchMyPRs(): Promise<PullRequest[]> {
 	const json = await runGraphQL("is:pr is:open author:@me");
 	return json.data.search.nodes.map((node) => parseNode(node));
 }
+
+export async function markPrReady(repo: string, number: number): Promise<void> {
+	await runGh(["pr", "ready", String(number), "-R", repo]);
+}
