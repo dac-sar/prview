@@ -69,7 +69,11 @@ export function PrRow({ pr, isSelected }: Props) {
 				<>
 					<Text dimColor>|</Text>
 					<Box width={COL.status} marginLeft={1}>
-						<StatusBadge decision={pr.reviewDecision} isDraft={pr.isDraft} />
+						<StatusBadge
+							decision={pr.reviewDecision}
+							isDraft={pr.isDraft}
+							mergeStateStatus={pr.mergeStateStatus}
+						/>
 					</Box>
 				</>
 			)}

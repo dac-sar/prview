@@ -1,5 +1,11 @@
 import { execFile } from "node:child_process";
-import type { Label, PullRequest, ReviewDecision, Reviewer } from "../types.js";
+import type {
+	Label,
+	MergeStateStatus,
+	PullRequest,
+	ReviewDecision,
+	Reviewer,
+} from "../types.js";
 
 const QUERY = `
 query($q: String!) {
@@ -15,6 +21,7 @@ query($q: String!) {
         deletions
         headRefName
         reviewDecision
+        mergeStateStatus
         author {
           login
         }
@@ -63,6 +70,7 @@ type GraphQLNode = {
 	deletions: number;
 	headRefName: string;
 	reviewDecision: ReviewDecision | null;
+	mergeStateStatus: MergeStateStatus | null;
 	author: { login: string } | null;
 	repository: { nameWithOwner: string };
 	labels: { nodes: Array<{ name: string; color: string }> };
@@ -118,6 +126,7 @@ function parseNode(node: GraphQLNode): PullRequest {
 		author: node.author?.login ?? "unknown",
 		reviewers,
 		reviewDecision: node.reviewDecision ?? "",
+		mergeStateStatus: node.mergeStateStatus ?? "",
 		isDraft: node.isDraft,
 		additions: node.additions,
 		deletions: node.deletions,
@@ -172,4 +181,15 @@ export async function fetchMyPRs(): Promise<PullRequest[]> {
 
 export async function markPrReady(repo: string, number: number): Promise<void> {
 	await runGh(["pr", "ready", String(number), "-R", repo]);
+}
+
+export async function updatePrBranch(
+	repo: string,
+	number: number,
+): Promise<void> {
+	await runGh(["pr", "update-branch", String(number), "-R", repo]);
+}
+
+export async function mergePr(repo: string, number: number): Promise<void> {
+	await runGh(["pr", "merge", String(number), "-R", repo, "--merge"]);
 }

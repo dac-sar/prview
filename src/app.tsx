@@ -8,7 +8,7 @@ import { useFilterSort } from "./hooks/use-filter-sort.js";
 import { usePullRequests } from "./hooks/use-pull-requests.js";
 import type { Tab } from "./types.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
-import { markPrReady } from "./utils/fetch-prs.js";
+import { markPrReady, mergePr, updatePrBranch } from "./utils/fetch-prs.js";
 import { openUrl } from "./utils/open-url.js";
 
 export function App() {
@@ -158,6 +158,50 @@ export function App() {
 								const message =
 									err instanceof Error ? err.message : "Unknown error";
 								notify(`Failed to mark ready: ${message}`);
+							});
+					}
+				}
+
+				return;
+			}
+
+			if (input === "m") {
+				const pr = filteredPRs[selectedIndex];
+				if (pr) {
+					if (pr.reviewDecision !== "APPROVED") {
+						notify(`#${pr.number} is not approved`);
+					} else if (pr.mergeStateStatus === "BEHIND") {
+						notify(`Updating branch for #${pr.number}...`);
+						updatePrBranch(pr.repository, pr.number)
+							.then(() => {
+								notify(
+									`Updated branch for #${pr.number}, press m again once checks pass`,
+								);
+								refresh();
+							})
+							.catch((err: unknown) => {
+								const message =
+									err instanceof Error ? err.message : "Unknown error";
+								notify(`Failed to update branch: ${message}`);
+							});
+					} else if (
+						pr.mergeStateStatus === "BLOCKED" ||
+						pr.mergeStateStatus === "DIRTY"
+					) {
+						notify(
+							`#${pr.number} cannot be merged (${pr.mergeStateStatus.toLowerCase()})`,
+						);
+					} else {
+						notify(`Merging #${pr.number}...`);
+						mergePr(pr.repository, pr.number)
+							.then(() => {
+								notify(`Merged #${pr.number}`);
+								refresh();
+							})
+							.catch((err: unknown) => {
+								const message =
+									err instanceof Error ? err.message : "Unknown error";
+								notify(`Failed to merge: ${message}`);
 							});
 					}
 				}

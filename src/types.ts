@@ -11,6 +11,17 @@ export type ReviewState =
 	| "PENDING"
 	| "DISMISSED";
 
+export type MergeStateStatus =
+	| "BEHIND"
+	| "BLOCKED"
+	| "CLEAN"
+	| "DIRTY"
+	| "DRAFT"
+	| "HAS_HOOKS"
+	| "UNKNOWN"
+	| "UNSTABLE"
+	| "";
+
 export type Reviewer = {
 	login: string;
 	state: ReviewState;
@@ -30,6 +41,7 @@ export type PullRequest = {
 	author: string;
 	reviewers: Reviewer[];
 	reviewDecision: ReviewDecision;
+	mergeStateStatus: MergeStateStatus;
 	isDraft: boolean;
 	additions: number;
 	deletions: number;

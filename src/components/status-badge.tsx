@@ -1,14 +1,19 @@
 import { Text } from "ink";
-import type { ReviewDecision } from "../types.js";
+import type { MergeStateStatus, ReviewDecision } from "../types.js";
 
 type Props = {
 	decision: ReviewDecision;
 	isDraft: boolean;
+	mergeStateStatus: MergeStateStatus;
 };
 
-export function StatusBadge({ decision, isDraft }: Props) {
+export function StatusBadge({ decision, isDraft, mergeStateStatus }: Props) {
 	if (isDraft) {
 		return <Text dimColor>◌ DRAFT</Text>;
+	}
+
+	if (decision === "APPROVED" && mergeStateStatus === "BEHIND") {
+		return <Text color="cyan">⟳ UPDATE</Text>;
 	}
 
 	switch (decision) {
