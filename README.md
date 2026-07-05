@@ -36,16 +36,41 @@ pv
 
 ## Keybindings
 
+### Navigation
+
 | Key | Action |
 | --- | --- |
 | `Tab` | Switch between My PRs / Review PRs |
 | `j` / `Down` | Move selection down |
 | `k` / `Up` | Move selection up |
+
+### PR Actions
+
+| Key | Action |
+| --- | --- |
 | `Enter` / `l` | Open selected PR in browser |
+| `o` | Mark draft as ready for review |
+| `m` | Merge approved PR (auto-updates if behind) |
+| `y` | Copy PR URL |
+| `Y` | Copy branch name |
+
+### Grouping
+
+| Key | Action |
+| --- | --- |
 | `g` | Toggle grouping PRs by branch name across repositories |
+| `l` / `Enter` | Expand the group under the cursor |
+| `h` | Collapse the group under the cursor |
+| `H` / `L` | Collapse / Expand all groups |
+
+### General
+
+| Key | Action |
+| --- | --- |
 | `/` | Enter filter mode |
 | `Esc` | Exit filter mode / Clear filter |
 | `r` | Refresh |
+| `?` | Toggle help |
 | `q` | Quit |
 
 ## Tech Stack

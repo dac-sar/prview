@@ -1,17 +1,43 @@
 // Single source of truth for key bindings, shown in the help dialog.
-export const COMMANDS: { key: string; label: string }[] = [
-	{ key: "Tab", label: "Switch tab" },
-	{ key: "j / k", label: "Move selection (↑ / ↓)" },
-	{ key: "Enter / l", label: "Open PR in browser" },
-	{ key: "o", label: "Mark draft as ready for review" },
-	{ key: "m", label: "Merge approved PR (auto-updates if behind)" },
-	{ key: "y", label: "Copy PR URL" },
-	{ key: "Y", label: "Copy branch name" },
-	{ key: "g", label: "Group PRs by branch name" },
-	{ key: "/", label: "Filter" },
-	{ key: "r", label: "Refresh" },
-	{ key: "h", label: "Toggle this help" },
-	{ key: "q", label: "Quit" },
+export type Command = { key: string; label: string };
+export type CommandGroup = { title: string; commands: Command[] };
+
+export const COMMAND_GROUPS: CommandGroup[] = [
+	{
+		title: "Navigation",
+		commands: [
+			{ key: "Tab", label: "Switch tab" },
+			{ key: "j / k", label: "Move selection (↑ / ↓)" },
+		],
+	},
+	{
+		title: "PR Actions",
+		commands: [
+			{ key: "Enter / l", label: "Open PR in browser" },
+			{ key: "o", label: "Mark draft as ready for review" },
+			{ key: "m", label: "Merge approved PR (auto-updates if behind)" },
+			{ key: "y", label: "Copy PR URL" },
+			{ key: "Y", label: "Copy branch name" },
+		],
+	},
+	{
+		title: "Grouping",
+		commands: [
+			{ key: "g", label: "Toggle grouping by branch name" },
+			{ key: "l / Enter", label: "Expand group" },
+			{ key: "h", label: "Collapse group" },
+			{ key: "H / L", label: "Collapse / Expand all groups" },
+		],
+	},
+	{
+		title: "General",
+		commands: [
+			{ key: "/", label: "Filter" },
+			{ key: "r", label: "Refresh" },
+			{ key: "?", label: "Toggle this help" },
+			{ key: "q", label: "Quit" },
+		],
+	},
 ];
 
 export const COL = {

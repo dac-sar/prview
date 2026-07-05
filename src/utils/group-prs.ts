@@ -1,25 +1,19 @@
 import type { DisplayRow, PullRequest } from "../types.js";
 
-export type DisplayList = {
-	rows: DisplayRow[];
-	orderedPrs: PullRequest[];
-};
-
-// Build the rows to render and the flattened PR order selection indexes into.
+// Build the rows to render; the selection cursor indexes into this array.
 // In grouped mode, PRs sharing a branch name (necessarily across different
 // repositories) are pulled together under a group-header row. Every branch
 // gets a header — even single-PR ones — so group boundaries stay visible.
-// Groups appear at the position of their first PR, so the overall createdAt
-// ordering of the input is preserved.
+// Collapsed branches emit only their header. Groups appear at the position
+// of their first PR, so the overall createdAt ordering of the input is
+// preserved.
 export function buildDisplayRows(
 	prs: PullRequest[],
 	grouped: boolean,
-): DisplayList {
+	collapsedBranches: ReadonlySet<string>,
+): DisplayRow[] {
 	if (!grouped) {
-		return {
-			rows: prs.map((pr, prIndex) => ({ kind: "pr", pr, prIndex })),
-			orderedPrs: prs,
-		};
+		return prs.map((pr) => ({ kind: "pr", pr }));
 	}
 
 	const byBranch = new Map<string, PullRequest[]>();
@@ -33,15 +27,52 @@ export function buildDisplayRows(
 	}
 
 	const rows: DisplayRow[] = [];
-	const orderedPrs: PullRequest[] = [];
 	for (const [branch, group] of byBranch) {
-		rows.push({ kind: "group-header", branch, count: group.length });
+		const collapsed = collapsedBranches.has(branch);
+		rows.push({ kind: "group-header", branch, count: group.length, collapsed });
 
-		for (const pr of group) {
-			rows.push({ kind: "pr", pr, prIndex: orderedPrs.length });
-			orderedPrs.push(pr);
+		if (!collapsed) {
+			for (const pr of group) {
+				rows.push({ kind: "pr", pr });
+			}
 		}
 	}
 
-	return { rows, orderedPrs };
+	return rows;
+}
+
+// Where the cursor should land after rows are rebuilt (collapse/expand,
+// grouping toggled). Prefer the same PR, then the header of its branch,
+// then the first PR of that branch (for header → flat transitions).
+export function findRowIndex(
+	rows: DisplayRow[],
+	target: DisplayRow | undefined,
+): number {
+	if (!target) {
+		return -1;
+	}
+
+	if (target.kind === "pr") {
+		const byPr = rows.findIndex(
+			(row) => row.kind === "pr" && row.pr.url === target.pr.url,
+		);
+		if (byPr >= 0) {
+			return byPr;
+		}
+
+		return rows.findIndex(
+			(row) => row.kind === "group-header" && row.branch === target.pr.branch,
+		);
+	}
+
+	const byHeader = rows.findIndex(
+		(row) => row.kind === "group-header" && row.branch === target.branch,
+	);
+	if (byHeader >= 0) {
+		return byHeader;
+	}
+
+	return rows.findIndex(
+		(row) => row.kind === "pr" && row.pr.branch === target.branch,
+	);
 }

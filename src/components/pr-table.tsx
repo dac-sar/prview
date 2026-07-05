@@ -18,16 +18,12 @@ export function PrTable({ rows, selectedIndex, maxRows }: Props) {
 	}
 
 	const visibleCount = Math.max(1, maxRows);
-	const selectedRowIndex = Math.max(
-		0,
-		rows.findIndex((row) => row.kind === "pr" && row.prIndex === selectedIndex),
-	);
 
 	// Calculate scroll window to keep the selected row visible
 	let scrollOffset = 0;
 	if (rows.length > visibleCount) {
-		if (selectedRowIndex >= visibleCount) {
-			scrollOffset = selectedRowIndex - visibleCount + 1;
+		if (selectedIndex >= visibleCount) {
+			scrollOffset = selectedIndex - visibleCount + 1;
 		}
 
 		scrollOffset = Math.min(scrollOffset, rows.length - visibleCount);
@@ -37,25 +33,25 @@ export function PrTable({ rows, selectedIndex, maxRows }: Props) {
 
 	return (
 		<Box flexDirection="column" paddingX={1}>
-			{visibleRows.map((row) =>
-				row.kind === "group-header" ? (
+			{visibleRows.map((row, index) => {
+				const isSelected = index + scrollOffset === selectedIndex;
+				return row.kind === "group-header" ? (
 					<Box key={`group:${row.branch}`}>
+						<Text color={isSelected ? "red" : undefined}>
+							{isSelected ? ">" : " "}
+						</Text>
 						<Text wrap="truncate">
-							{"  "}
+							{" "}
 							<Text bold color="cyan">
-								▼ {row.branch}
+								{row.collapsed ? "▶" : "▼"} {row.branch}
 							</Text>
 							<Text dimColor> ({row.count})</Text>
 						</Text>
 					</Box>
 				) : (
-					<PrRow
-						key={row.pr.url}
-						pr={row.pr}
-						isSelected={row.prIndex === selectedIndex}
-					/>
-				),
-			)}
+					<PrRow key={row.pr.url} pr={row.pr} isSelected={isSelected} />
+				);
+			})}
 		</Box>
 	);
 }

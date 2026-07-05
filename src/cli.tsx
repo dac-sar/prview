@@ -11,13 +11,28 @@ meow(
     --help  Show help
 
   Keybindings
-    Tab      Switch tab (My PRs / Review PRs)
-    j/k ↑/↓  Move cursor
-    Enter/l  Open PR in browser
-    /        Filter mode
-    Esc      Clear filter
-    r        Refresh
-    q        Quit
+    Navigation
+      Tab      Switch tab (My PRs / Review PRs)
+      j/k ↑/↓  Move cursor
+
+    PR Actions
+      Enter/l  Open PR in browser
+      o        Mark draft as ready for review
+      m        Merge approved PR
+      y/Y      Copy PR URL / branch name
+
+    Grouping
+      g        Toggle grouping by branch name
+      l/Enter  Expand group
+      h        Collapse group
+      H/L      Collapse/Expand all groups
+
+    General
+      /        Filter mode
+      Esc      Clear filter
+      r        Refresh
+      ?        Help
+      q        Quit
 `,
 	{
 		importMeta: import.meta,

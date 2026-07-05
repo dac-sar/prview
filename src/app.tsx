@@ -9,7 +9,7 @@ import { usePullRequests } from "./hooks/use-pull-requests.js";
 import type { Tab } from "./types.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
 import { markPrReady, mergePr, updatePrBranch } from "./utils/fetch-prs.js";
-import { buildDisplayRows } from "./utils/group-prs.js";
+import { buildDisplayRows, findRowIndex } from "./utils/group-prs.js";
 import { openUrl } from "./utils/open-url.js";
 
 export function App() {
@@ -24,6 +24,9 @@ export function App() {
 	const [isFilterMode, setIsFilterMode] = useState(false);
 	const [showHelp, setShowHelp] = useState(false);
 	const [groupByBranch, setGroupByBranch] = useState(false);
+	const [collapsedBranches, setCollapsedBranches] = useState<
+		ReadonlySet<string>
+	>(new Set());
 	const [statusMessage, setStatusMessage] = useState("");
 	const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,9 +45,9 @@ export function App() {
 
 	const currentPRs = activeTab === "review-requested" ? reviewRequested : myPRs;
 	const filteredPRs = useFilterSort(currentPRs, filter);
-	const { rows: displayRows, orderedPrs } = useMemo(
-		() => buildDisplayRows(filteredPRs, groupByBranch),
-		[filteredPRs, groupByBranch],
+	const displayRows = useMemo(
+		() => buildDisplayRows(filteredPRs, groupByBranch, collapsedBranches),
+		[filteredPRs, groupByBranch, collapsedBranches],
 	);
 
 	// On terminal resize (SIGWINCH — same event whether you resize, split, or
@@ -65,8 +68,8 @@ export function App() {
 	}, [stdout]);
 
 	const clampIndex = useCallback(
-		(index: number) => Math.max(0, Math.min(index, orderedPrs.length - 1)),
-		[orderedPrs.length],
+		(index: number) => Math.max(0, Math.min(index, displayRows.length - 1)),
+		[displayRows.length],
 	);
 
 	useInput(
@@ -79,10 +82,10 @@ export function App() {
 		{ isActive: isFilterMode },
 	);
 
-	// Help dialog: any of h / Esc / q closes it; everything else is swallowed.
+	// Help dialog: any of ? / Esc / q closes it; everything else is swallowed.
 	useInput(
 		(input, key) => {
-			if (input === "h" || key.escape || input === "q") {
+			if (input === "?" || key.escape || input === "q") {
 				setShowHelp(false);
 			}
 		},
@@ -91,12 +94,16 @@ export function App() {
 
 	useInput(
 		(input, key) => {
+			const selectedRow = displayRows[selectedIndex];
+			const selectedPr =
+				selectedRow?.kind === "pr" ? selectedRow.pr : undefined;
+
 			if (input === "q") {
 				exit();
 				return;
 			}
 
-			if (input === "h") {
+			if (input === "?") {
 				setShowHelp(true);
 				return;
 			}
@@ -120,18 +127,57 @@ export function App() {
 			}
 
 			if (key.return || input === "l") {
-				const pr = orderedPrs[selectedIndex];
-				if (pr) {
-					openUrl(pr.url);
+				if (selectedRow?.kind === "group-header") {
+					if (selectedRow.collapsed) {
+						// Rows are only added after the header, so the cursor stays put.
+						const next = new Set(collapsedBranches);
+						next.delete(selectedRow.branch);
+						setCollapsedBranches(next);
+					}
+				} else if (selectedPr) {
+					openUrl(selectedPr.url);
+				}
+
+				return;
+			}
+
+			// Collapse the group under the cursor (the selected PR's, or the
+			// header's own). No-op outside grouped mode.
+			if (input === "h") {
+				if (groupByBranch && selectedRow) {
+					const branch =
+						selectedRow.kind === "pr"
+							? selectedRow.pr.branch
+							: selectedRow.branch;
+					if (!collapsedBranches.has(branch)) {
+						const next = new Set(collapsedBranches);
+						next.add(branch);
+						const nextRows = buildDisplayRows(filteredPRs, true, next);
+						setSelectedIndex(Math.max(0, findRowIndex(nextRows, selectedRow)));
+						setCollapsedBranches(next);
+					}
+				}
+
+				return;
+			}
+
+			if (input === "H" || input === "L") {
+				if (groupByBranch) {
+					const next: ReadonlySet<string> =
+						input === "H"
+							? new Set(filteredPRs.map((pr) => pr.branch))
+							: new Set();
+					const nextRows = buildDisplayRows(filteredPRs, true, next);
+					setSelectedIndex(Math.max(0, findRowIndex(nextRows, selectedRow)));
+					setCollapsedBranches(next);
 				}
 
 				return;
 			}
 
 			if (input === "y") {
-				const pr = orderedPrs[selectedIndex];
-				if (pr) {
-					copyToClipboard(pr.url);
+				if (selectedPr) {
+					copyToClipboard(selectedPr.url);
 					notifyCopied("URL");
 				}
 
@@ -139,9 +185,12 @@ export function App() {
 			}
 
 			if (input === "Y") {
-				const pr = orderedPrs[selectedIndex];
-				if (pr) {
-					copyToClipboard(pr.branch);
+				if (selectedRow) {
+					copyToClipboard(
+						selectedRow.kind === "pr"
+							? selectedRow.pr.branch
+							: selectedRow.branch,
+					);
 					notifyCopied("branch");
 				}
 
@@ -149,7 +198,7 @@ export function App() {
 			}
 
 			if (input === "o") {
-				const pr = orderedPrs[selectedIndex];
+				const pr = selectedPr;
 				if (pr) {
 					if (!pr.isDraft) {
 						notify(`#${pr.number} is not a draft`);
@@ -172,7 +221,7 @@ export function App() {
 			}
 
 			if (input === "m") {
-				const pr = orderedPrs[selectedIndex];
+				const pr = selectedPr;
 				if (pr) {
 					if (pr.reviewDecision !== "APPROVED") {
 						notify(`#${pr.number} is not approved`);
@@ -217,15 +266,9 @@ export function App() {
 
 			if (input === "g") {
 				const next = !groupByBranch;
-				const pr = orderedPrs[selectedIndex];
-				if (pr) {
-					// Keep the same PR selected across the reorder.
-					const nextIndex = buildDisplayRows(
-						filteredPRs,
-						next,
-					).orderedPrs.indexOf(pr);
-					setSelectedIndex(Math.max(0, nextIndex));
-				}
+				// Keep the cursor on the same PR (or its group) across the reorder.
+				const nextRows = buildDisplayRows(filteredPRs, next, collapsedBranches);
+				setSelectedIndex(Math.max(0, findRowIndex(nextRows, selectedRow)));
 				setGroupByBranch(next);
 				return;
 			}
