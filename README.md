@@ -41,7 +41,7 @@ pv
 | `Tab` | Switch between My PRs / Review PRs |
 | `j` / `Down` | Move selection down |
 | `k` / `Up` | Move selection up |
-| `Enter` | Open selected PR in browser |
+| `Enter` / `l` | Open selected PR in browser |
 | `g` | Toggle grouping PRs by branch name across repositories |
 | `/` | Enter filter mode |
 | `Esc` | Exit filter mode / Clear filter |

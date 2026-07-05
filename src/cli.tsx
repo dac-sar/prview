@@ -13,7 +13,7 @@ meow(
   Keybindings
     Tab      Switch tab (My PRs / Review PRs)
     j/k ↑/↓  Move cursor
-    Enter    Open PR in browser
+    Enter/l  Open PR in browser
     /        Filter mode
     Esc      Clear filter
     r        Refresh

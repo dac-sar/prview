@@ -119,7 +119,7 @@ export function App() {
 				return;
 			}
 
-			if (key.return) {
+			if (key.return || input === "l") {
 				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					openUrl(pr.url);
