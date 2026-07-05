@@ -7,6 +7,7 @@ export const COMMANDS: { key: string; label: string }[] = [
 	{ key: "m", label: "Merge approved PR (auto-updates if behind)" },
 	{ key: "y", label: "Copy PR URL" },
 	{ key: "Y", label: "Copy branch name" },
+	{ key: "g", label: "Group PRs by branch name" },
 	{ key: "/", label: "Filter" },
 	{ key: "r", label: "Refresh" },
 	{ key: "h", label: "Toggle this help" },

@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput, useStdout } from "ink";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HelpDialog } from "./components/help-dialog.js";
 import { Loading } from "./components/loading.js";
 import { PrTable } from "./components/pr-table.js";
@@ -9,6 +9,7 @@ import { usePullRequests } from "./hooks/use-pull-requests.js";
 import type { Tab } from "./types.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
 import { markPrReady, mergePr, updatePrBranch } from "./utils/fetch-prs.js";
+import { buildDisplayRows } from "./utils/group-prs.js";
 import { openUrl } from "./utils/open-url.js";
 
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
 	const [filter, setFilter] = useState("");
 	const [isFilterMode, setIsFilterMode] = useState(false);
 	const [showHelp, setShowHelp] = useState(false);
+	const [groupByBranch, setGroupByBranch] = useState(false);
 	const [statusMessage, setStatusMessage] = useState("");
 	const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -40,6 +42,10 @@ export function App() {
 
 	const currentPRs = activeTab === "review-requested" ? reviewRequested : myPRs;
 	const filteredPRs = useFilterSort(currentPRs, filter);
+	const { rows: displayRows, orderedPrs } = useMemo(
+		() => buildDisplayRows(filteredPRs, groupByBranch),
+		[filteredPRs, groupByBranch],
+	);
 
 	// On terminal resize (SIGWINCH — same event whether you resize, split, or
 	// add a Ghostty window), the alternate screen can keep stale rows because
@@ -59,8 +65,8 @@ export function App() {
 	}, [stdout]);
 
 	const clampIndex = useCallback(
-		(index: number) => Math.max(0, Math.min(index, filteredPRs.length - 1)),
-		[filteredPRs.length],
+		(index: number) => Math.max(0, Math.min(index, orderedPrs.length - 1)),
+		[orderedPrs.length],
 	);
 
 	useInput(
@@ -114,7 +120,7 @@ export function App() {
 			}
 
 			if (key.return) {
-				const pr = filteredPRs[selectedIndex];
+				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					openUrl(pr.url);
 				}
@@ -123,7 +129,7 @@ export function App() {
 			}
 
 			if (input === "y") {
-				const pr = filteredPRs[selectedIndex];
+				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					copyToClipboard(pr.url);
 					notifyCopied("URL");
@@ -133,7 +139,7 @@ export function App() {
 			}
 
 			if (input === "Y") {
-				const pr = filteredPRs[selectedIndex];
+				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					copyToClipboard(pr.branch);
 					notifyCopied("branch");
@@ -143,7 +149,7 @@ export function App() {
 			}
 
 			if (input === "o") {
-				const pr = filteredPRs[selectedIndex];
+				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					if (!pr.isDraft) {
 						notify(`#${pr.number} is not a draft`);
@@ -166,7 +172,7 @@ export function App() {
 			}
 
 			if (input === "m") {
-				const pr = filteredPRs[selectedIndex];
+				const pr = orderedPrs[selectedIndex];
 				if (pr) {
 					if (pr.reviewDecision !== "APPROVED") {
 						notify(`#${pr.number} is not approved`);
@@ -206,6 +212,21 @@ export function App() {
 					}
 				}
 
+				return;
+			}
+
+			if (input === "g") {
+				const next = !groupByBranch;
+				const pr = orderedPrs[selectedIndex];
+				if (pr) {
+					// Keep the same PR selected across the reorder.
+					const nextIndex = buildDisplayRows(
+						filteredPRs,
+						next,
+					).orderedPrs.indexOf(pr);
+					setSelectedIndex(Math.max(0, nextIndex));
+				}
+				setGroupByBranch(next);
 				return;
 			}
 
@@ -251,7 +272,7 @@ export function App() {
 					justifyContent="flex-end"
 				>
 					<PrTable
-						prs={filteredPRs}
+						rows={displayRows}
 						selectedIndex={selectedIndex}
 						maxRows={maxRows}
 					/>
@@ -266,6 +287,7 @@ export function App() {
 				myCount={myPRs.length}
 				isFilterMode={isFilterMode}
 				loading={loading}
+				groupByBranch={groupByBranch}
 				statusMessage={statusMessage}
 			/>
 		</Box>

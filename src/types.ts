@@ -50,3 +50,10 @@ export type PullRequest = {
 };
 
 export type Tab = "review-requested" | "my-prs";
+
+// A renderable line in the PR table. In grouped mode, PRs sharing a branch
+// name across repositories sit under a group-header row. prIndex is the
+// position in the flattened PR order, which selection indexes into.
+export type DisplayRow =
+	| { kind: "group-header"; branch: string; count: number }
+	| { kind: "pr"; pr: PullRequest; prIndex: number };

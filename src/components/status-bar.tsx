@@ -11,6 +11,7 @@ type Props = {
 	myCount: number;
 	isFilterMode: boolean;
 	loading: boolean;
+	groupByBranch: boolean;
 	statusMessage: string;
 };
 
@@ -23,6 +24,7 @@ export function StatusBar({
 	myCount,
 	isFilterMode,
 	loading,
+	groupByBranch,
 	statusMessage,
 }: Props) {
 	const isReview = activeTab === "review-requested";
@@ -62,6 +64,7 @@ export function StatusBar({
 						<Text bold color={isReview ? "cyan" : "magenta"}>
 							{tabLabel}
 						</Text>
+						{groupByBranch && <Text dimColor> [grouped by branch]</Text>}
 						{loading && <Text dimColor> Refreshing...</Text>}
 					</>
 				)}
