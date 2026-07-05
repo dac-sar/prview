@@ -30,6 +30,14 @@ export const COMMAND_GROUPS: CommandGroup[] = [
 		],
 	},
 	{
+		title: "Linear",
+		commands: [
+			{ key: "Spc l g", label: "Open Linear issue for the branch" },
+			{ key: "Spc l y", label: "Copy Linear issue URL" },
+			{ key: "Spc l c", label: "Copy Linear issue ID" },
+		],
+	},
+	{
 		title: "General",
 		commands: [
 			{ key: "/", label: "Filter" },
@@ -39,6 +47,44 @@ export const COMMAND_GROUPS: CommandGroup[] = [
 		],
 	},
 ];
+
+// Leader (Space) key sequences, which-key style. Single source of truth for
+// both dispatch and the which-key panel.
+export type LeaderAction = "linear-open" | "linear-copy-url" | "linear-copy-id";
+
+export type LeaderNode = {
+	key: string;
+	label: string;
+	action?: LeaderAction;
+	children?: LeaderNode[];
+};
+
+export const LEADER_KEYMAP: LeaderNode[] = [
+	{
+		key: "l",
+		label: "linear",
+		children: [
+			{ key: "g", label: "go to issue", action: "linear-open" },
+			{ key: "y", label: "copy issue URL", action: "linear-copy-url" },
+			{ key: "c", label: "copy issue ID", action: "linear-copy-id" },
+		],
+	},
+];
+
+// Nodes reachable at the given leader path ("" = root, "l" = inside linear).
+// Empty result means the path is invalid or points at a leaf.
+export function resolveLeaderNodes(path: string): LeaderNode[] {
+	let nodes = LEADER_KEYMAP;
+	for (const key of path) {
+		const node = nodes.find((n) => n.key === key);
+		if (!node?.children) {
+			return [];
+		}
+		nodes = node.children;
+	}
+
+	return nodes;
+}
 
 export const COL = {
 	icon: 4,

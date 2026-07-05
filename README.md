@@ -63,6 +63,19 @@ pv
 | `h` | Collapse the group under the cursor |
 | `H` / `L` | Collapse / Expand all groups |
 
+### Linear
+
+| Key | Action |
+| --- | --- |
+| `Space` `l` `g` | Open the Linear issue for the selected branch |
+| `Space` `l` `y` | Copy the Linear issue URL |
+| `Space` `l` `c` | Copy the Linear issue ID |
+
+Pressing `Space` shows a which-key style hint panel in the bottom-right corner.
+`Space l g` opens the Linear desktop app when installed, falling back to the browser otherwise.
+Works when the branch name contains a Linear issue identifier (e.g. `username/eng-123-fix-login`).
+The first time a team key (the `ENG` in `ENG-123`) is seen, you'll be asked for its Linear workspace slug (the part after `linear.app/` in issue URLs); the mapping is saved to `~/.config/prview/state.json`, so issues from multiple workspaces work side by side.
+
 ### General
 
 | Key | Action |

@@ -13,6 +13,9 @@ type Props = {
 	loading: boolean;
 	groupByBranch: boolean;
 	statusMessage: string;
+	// Linear team key being configured, or null when the prompt is hidden.
+	workspacePromptTeam: string | null;
+	onWorkspaceSubmit: (value: string) => void;
 };
 
 export function StatusBar({
@@ -26,6 +29,8 @@ export function StatusBar({
 	loading,
 	groupByBranch,
 	statusMessage,
+	workspacePromptTeam,
+	onWorkspaceSubmit,
 }: Props) {
 	const isReview = activeTab === "review-requested";
 	const tabLabel = isReview
@@ -44,7 +49,17 @@ export function StatusBar({
 			justifyContent="space-between"
 		>
 			<Box>
-				{statusMessage ? (
+				{workspacePromptTeam !== null ? (
+					<>
+						<Text color="yellow">
+							Linear workspace for {workspacePromptTeam}:{" "}
+						</Text>
+						<TextInput
+							placeholder="your-workspace-slug"
+							onSubmit={onWorkspaceSubmit}
+						/>
+					</>
+				) : statusMessage ? (
 					<Text color="green">✓ {statusMessage}</Text>
 				) : isFilterActive || filter ? (
 					<>
@@ -70,7 +85,7 @@ export function StatusBar({
 				)}
 			</Box>
 			<Box gap={1}>
-				{isFilterMode ? (
+				{isFilterMode || workspacePromptTeam !== null ? (
 					<Text dimColor>
 						<Text color="gray">Esc</Text> <Text dimColor>cancel</Text>
 					</Text>

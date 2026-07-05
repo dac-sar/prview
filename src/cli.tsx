@@ -27,6 +27,11 @@ meow(
       h        Collapse group
       H/L      Collapse/Expand all groups
 
+    Linear
+      Space l g  Open Linear issue for the branch
+      Space l y  Copy Linear issue URL
+      Space l c  Copy Linear issue ID
+
     General
       /        Filter mode
       Esc      Clear filter

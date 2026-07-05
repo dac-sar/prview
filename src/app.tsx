@@ -4,13 +4,21 @@ import { HelpDialog } from "./components/help-dialog.js";
 import { Loading } from "./components/loading.js";
 import { PrTable } from "./components/pr-table.js";
 import { StatusBar } from "./components/status-bar.js";
+import { WhichKeyPanel } from "./components/which-key-panel.js";
+import { type LeaderAction, resolveLeaderNodes } from "./constants.js";
 import { useFilterSort } from "./hooks/use-filter-sort.js";
 import { usePullRequests } from "./hooks/use-pull-requests.js";
 import type { Tab } from "./types.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
 import { markPrReady, mergePr, updatePrBranch } from "./utils/fetch-prs.js";
 import { buildDisplayRows, findRowIndex } from "./utils/group-prs.js";
-import { openUrl } from "./utils/open-url.js";
+import {
+	extractLinearIssueId,
+	linearAppUrl,
+	linearIssueUrl,
+	linearTeamKey,
+} from "./utils/linear.js";
+import { openUrl, openUrlWithFallback } from "./utils/open-url.js";
 import {
 	loadPersistedState,
 	savePersistedState,
@@ -34,6 +42,17 @@ export function App() {
 	const [collapsedBranches, setCollapsedBranches] = useState<
 		ReadonlySet<string>
 	>(new Set(persisted.collapsedBranches));
+	const [linearWorkspaces, setLinearWorkspaces] = useState<
+		Record<string, string>
+	>(persisted.linearWorkspaces);
+	// null = leader inactive, "" = <space> pressed, "l" = inside the l group.
+	const [leaderPath, setLeaderPath] = useState<string | null>(null);
+	// A Linear action waiting on the workspace slug for its team; non-null
+	// while the workspace prompt is shown.
+	const [pendingLinear, setPendingLinear] = useState<{
+		issueId: string;
+		action: "open" | "copy-url";
+	} | null>(null);
 	const [statusMessage, setStatusMessage] = useState("");
 	const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,8 +92,9 @@ export function App() {
 				all.length > 0
 					? [...collapsedBranches].filter((branch) => known.has(branch))
 					: [...collapsedBranches],
+			linearWorkspaces,
 		});
-	}, [groupByBranch, collapsedBranches]);
+	}, [groupByBranch, collapsedBranches, linearWorkspaces]);
 
 	// On terminal resize (SIGWINCH — same event whether you resize, split, or
 	// add a Ghostty window), the alternate screen can keep stale rows because
@@ -118,6 +138,107 @@ export function App() {
 		{ isActive: showHelp },
 	);
 
+	const performLinearAction = useCallback(
+		(action: "open" | "copy-url", workspace: string, issueId: string) => {
+			const webUrl = linearIssueUrl(workspace, issueId);
+			if (action === "open") {
+				// Prefer the desktop app; `open` fails when the linear:// scheme
+				// has no handler, and we fall back to the browser.
+				openUrlWithFallback(linearAppUrl(workspace, issueId), webUrl);
+			} else {
+				copyToClipboard(webUrl);
+				notifyCopied("issue URL");
+			}
+		},
+		[notifyCopied],
+	);
+
+	const runLeaderAction = useCallback(
+		(action: LeaderAction) => {
+			const row = displayRows[selectedIndex];
+			if (!row) {
+				return;
+			}
+
+			const branch = row.kind === "pr" ? row.pr.branch : row.branch;
+			const issueId = extractLinearIssueId(branch);
+			if (!issueId) {
+				notify(`No Linear issue in branch: ${branch}`);
+				return;
+			}
+
+			if (action === "linear-copy-id") {
+				copyToClipboard(issueId);
+				notify(`Copied ${issueId} to clipboard`);
+				return;
+			}
+
+			const kind = action === "linear-open" ? "open" : "copy-url";
+			const workspace = linearWorkspaces[linearTeamKey(issueId)];
+			if (!workspace) {
+				// Unknown team: ask for its workspace slug, then run the action.
+				setPendingLinear({ issueId, action: kind });
+			} else {
+				performLinearAction(kind, workspace, issueId);
+			}
+		},
+		[displayRows, selectedIndex, linearWorkspaces, notify, performLinearAction],
+	);
+
+	// Leader (Space) mode: keys walk LEADER_KEYMAP; a leaf runs its action,
+	// Esc / Space / an unmapped key cancels. Swallows everything else.
+	useInput(
+		(input, key) => {
+			if (key.escape || input === " ") {
+				setLeaderPath(null);
+				return;
+			}
+
+			const nodes = resolveLeaderNodes(leaderPath ?? "");
+			const node = nodes.find((n) => n.key === input);
+			if (!node) {
+				setLeaderPath(null);
+				return;
+			}
+
+			if (node.action) {
+				setLeaderPath(null);
+				runLeaderAction(node.action);
+				return;
+			}
+
+			setLeaderPath((prev) => (prev ?? "") + node.key);
+		},
+		{ isActive: leaderPath !== null && pendingLinear === null },
+	);
+
+	// Workspace prompt: TextInput owns typing/submit; only Esc is handled here.
+	useInput(
+		(_input, key) => {
+			if (key.escape) {
+				setPendingLinear(null);
+			}
+		},
+		{ isActive: pendingLinear !== null },
+	);
+
+	const handleWorkspaceSubmit = useCallback(
+		(value: string) => {
+			const workspace = value.trim();
+			const pending = pendingLinear;
+			setPendingLinear(null);
+			if (!workspace || !pending) {
+				return;
+			}
+
+			const teamKey = linearTeamKey(pending.issueId);
+			setLinearWorkspaces((prev) => ({ ...prev, [teamKey]: workspace }));
+			notify(`Saved Linear workspace for ${teamKey}: ${workspace}`);
+			performLinearAction(pending.action, workspace, pending.issueId);
+		},
+		[pendingLinear, notify, performLinearAction],
+	);
+
 	useInput(
 		(input, key) => {
 			const selectedRow = displayRows[selectedIndex];
@@ -131,6 +252,11 @@ export function App() {
 
 			if (input === "?") {
 				setShowHelp(true);
+				return;
+			}
+
+			if (input === " ") {
+				setLeaderPath("");
 				return;
 			}
 
@@ -315,7 +441,13 @@ export function App() {
 				return;
 			}
 		},
-		{ isActive: !isFilterMode && !showHelp },
+		{
+			isActive:
+				!isFilterMode &&
+				!showHelp &&
+				leaderPath === null &&
+				pendingLinear === null,
+		},
 	);
 
 	// StatusBar: 2 rows (border-top + content), error: 1 row if present
@@ -345,6 +477,7 @@ export function App() {
 						selectedIndex={selectedIndex}
 						maxRows={maxRows}
 					/>
+					{leaderPath !== null && <WhichKeyPanel path={leaderPath} />}
 				</Box>
 			)}
 			<StatusBar
@@ -357,6 +490,10 @@ export function App() {
 				isFilterMode={isFilterMode}
 				loading={loading}
 				groupByBranch={groupByBranch}
+				workspacePromptTeam={
+					pendingLinear ? linearTeamKey(pendingLinear.issueId) : null
+				}
+				onWorkspaceSubmit={handleWorkspaceSubmit}
 				statusMessage={statusMessage}
 			/>
 		</Box>
