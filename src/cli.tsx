@@ -11,7 +11,7 @@ meow(
     --help  Show help
 
   Keybindings
-    Tab      Switch tab (Review Requested / My PRs)
+    Tab      Switch tab (My PRs / Review PRs)
     j/k ↑/↓  Move cursor
     Enter    Open PR in browser
     /        Filter mode

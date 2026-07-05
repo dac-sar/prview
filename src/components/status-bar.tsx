@@ -29,7 +29,7 @@ export function StatusBar({
 }: Props) {
 	const isReview = activeTab === "review-requested";
 	const tabLabel = isReview
-		? `To Review (${reviewCount})`
+		? `Review PRs (${reviewCount})`
 		: `My PRs (${myCount})`;
 
 	return (

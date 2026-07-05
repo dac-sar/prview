@@ -7,7 +7,7 @@ A terminal dashboard for your GitHub pull requests.
 ## Features
 
 - View pull requests across multiple repositories in one place
-- Two tabs: **Review Requested** and **My PRs**
+- Two tabs: **My PRs** and **Review PRs** (review requested)
 - Group PRs sharing a branch name across repositories (`g`)
 - Real-time filtering and sorting
 - Auto-refresh every 60 seconds
@@ -38,7 +38,7 @@ pv
 
 | Key | Action |
 | --- | --- |
-| `Tab` | Switch between Review Requested / My PRs |
+| `Tab` | Switch between My PRs / Review PRs |
 | `j` / `Down` | Move selection down |
 | `k` / `Up` | Move selection up |
 | `Enter` | Open selected PR in browser |

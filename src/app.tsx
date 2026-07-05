@@ -18,7 +18,7 @@ export function App() {
 	const rows = stdout?.rows ?? 24;
 	const { reviewRequested, myPRs, loading, error, refresh } = usePullRequests();
 
-	const [activeTab, setActiveTab] = useState<Tab>("review-requested");
+	const [activeTab, setActiveTab] = useState<Tab>("my-prs");
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [filter, setFilter] = useState("");
 	const [isFilterMode, setIsFilterMode] = useState(false);
