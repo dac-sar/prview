@@ -11,6 +11,13 @@ import { copyToClipboard } from "./utils/copy-to-clipboard.js";
 import { markPrReady, mergePr, updatePrBranch } from "./utils/fetch-prs.js";
 import { buildDisplayRows, findRowIndex } from "./utils/group-prs.js";
 import { openUrl } from "./utils/open-url.js";
+import {
+	loadPersistedState,
+	savePersistedState,
+} from "./utils/persisted-state.js";
+
+// Read once at startup; the app then owns the state and writes back on change.
+const persisted = loadPersistedState();
 
 export function App() {
 	const { exit } = useApp();
@@ -23,10 +30,10 @@ export function App() {
 	const [filter, setFilter] = useState("");
 	const [isFilterMode, setIsFilterMode] = useState(false);
 	const [showHelp, setShowHelp] = useState(false);
-	const [groupByBranch, setGroupByBranch] = useState(false);
+	const [groupByBranch, setGroupByBranch] = useState(persisted.groupByBranch);
 	const [collapsedBranches, setCollapsedBranches] = useState<
 		ReadonlySet<string>
-	>(new Set());
+	>(new Set(persisted.collapsedBranches));
 	const [statusMessage, setStatusMessage] = useState("");
 	const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,6 +56,25 @@ export function App() {
 		() => buildDisplayRows(filteredPRs, groupByBranch, collapsedBranches),
 		[filteredPRs, groupByBranch, collapsedBranches],
 	);
+
+	// Persist grouping state when it changes. The PR lists are read through a
+	// ref so a periodic refresh alone never triggers a write; they are only
+	// used to prune collapsed entries whose branches no longer exist. Skip the
+	// pruning while both lists are empty (startup, before the first fetch) —
+	// wiping the saved entries there would defeat the persistence.
+	const prsRef = useRef({ reviewRequested, myPRs });
+	prsRef.current = { reviewRequested, myPRs };
+	useEffect(() => {
+		const all = [...prsRef.current.reviewRequested, ...prsRef.current.myPRs];
+		const known = new Set(all.map((pr) => pr.branch));
+		savePersistedState({
+			groupByBranch,
+			collapsedBranches:
+				all.length > 0
+					? [...collapsedBranches].filter((branch) => known.has(branch))
+					: [...collapsedBranches],
+		});
+	}, [groupByBranch, collapsedBranches]);
 
 	// On terminal resize (SIGWINCH — same event whether you resize, split, or
 	// add a Ghostty window), the alternate screen can keep stale rows because
